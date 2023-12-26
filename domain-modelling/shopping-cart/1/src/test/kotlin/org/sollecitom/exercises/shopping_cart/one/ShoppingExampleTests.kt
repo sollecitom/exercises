@@ -8,10 +8,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.sollecitom.chassis.core.domain.currency.Currency
 import org.sollecitom.chassis.core.domain.currency.SpecificCurrencyAmount
-import org.sollecitom.chassis.core.domain.currency.known.Dollars
-import org.sollecitom.chassis.core.domain.currency.known.cents
-import org.sollecitom.chassis.core.domain.currency.known.currency
-import org.sollecitom.chassis.core.domain.currency.known.toCurrencyAmount
+import org.sollecitom.chassis.core.domain.currency.known.*
 import org.sollecitom.chassis.core.domain.currency.times
 import org.sollecitom.chassis.core.domain.identity.Id
 import org.sollecitom.chassis.core.domain.naming.Name
@@ -25,7 +22,6 @@ import java.math.BigDecimal
 private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.testProvider {
 
     // TODO Tests
-    // 2 apples and 3 bananas
     // an unsupported product
     // 3x2 discount
     // different prices on different days
@@ -66,16 +62,19 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
     fun `paying for some products`() = runTest {
 
         val shopper = newShopper()
-        val banana = newProduct("Banana")
-        val bananaPrice = 50.cents
-        val shop = newShop<Dollars>(prices = mapOf(banana to bananaPrice))
+        val bananas = newProduct("Banana(s)")
+        val apples = newProduct("Apple(s)")
+        val bananaPrice = 50.pence
+        val applePrice = 60.pence
+        val shop = newShop<Pounds>(prices = mapOf(bananas to bananaPrice, apples to applePrice))
 
-        shopper.addToCart(2 * banana)
+        shopper.addToCart(2 * bananas)
+        shopper.addToCart(3 * apples)
         val bill = with(shop) {
             shopper.checkout()
         }
 
-        assertThat(bill.total).isEqualTo(bananaPrice * 2)
+        assertThat(bill.total).isEqualTo(bananaPrice * 2 + applePrice * 3)
     }
 
     private fun newProduct(name: String, id: Id = newId.forEntities()): Product = ProductReference(id, name.let(::Name))
