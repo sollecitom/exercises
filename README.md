@@ -1,6 +1,6 @@
-# Sandpit Pricing Model
+# Exercises
 
-A model allowing to calculate pricing for sandpits.
+A collection of various exercises
 
 ## How to
 
@@ -10,7 +10,7 @@ A model allowing to calculate pricing for sandpits.
 ./gradlew build
 ```
 
-### Publish the artefacts to Maven local
+### Publish the artifacts to Maven local
 
 ```bash
 ./gradlew build publishToMavenLocal
@@ -19,7 +19,7 @@ A model allowing to calculate pricing for sandpits.
 ### Upgrade Gradle (example version)
 
 ```bash
-./gradlew wrapper --gradle-version 8.4 --distribution-type alls
+./gradlew wrapper --gradle-version 8.5 --distribution-type alls
 ```
 
 ### Update all dependencies if more recent versions exist, and remove unused ones (it will update `gradle/libs.versions.toml`)
