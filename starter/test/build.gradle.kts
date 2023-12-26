@@ -1,5 +1,5 @@
 dependencies {
-    api(projects.exercisesBundlesCore)
+    api(projects.exercisesStarterCore)
 
     api(libs.chassis.ddd.test.utils)
     api(libs.chassis.core.test.utils)

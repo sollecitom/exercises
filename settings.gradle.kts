@@ -2,8 +2,8 @@
 
 rootProject.name = "exercises"
 
-module("bundles", "core")
-module("bundles", "test")
+module("starter", "core")
+module("starter", "test")
 
 fun module(vararg pathSegments: String) {
     val projectName = pathSegments.last()
