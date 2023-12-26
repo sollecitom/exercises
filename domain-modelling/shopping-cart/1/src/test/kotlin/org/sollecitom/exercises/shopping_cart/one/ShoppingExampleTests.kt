@@ -37,7 +37,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         val shopper = newShopper()
         val shop = newShop<Dollars>()
 
-        val bill = with(shop) { shopper.checkout() }
+        val bill = shopper.checkout(shop)
 
         assertThat(bill.total).isZero()
     }
@@ -51,7 +51,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         val shop = newShop<Dollars>(prices = mapOf(bananas to bananaPrice))
 
         shopper.addToCart(bananas)
-        val bill = with(shop) { shopper.checkout() }
+        val bill = shopper.checkout(shop)
 
         assertThat(bill.total).isEqualTo(bananaPrice)
     }
@@ -68,7 +68,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
 
         shopper.addToCart(2 * bananas)
         shopper.addToCart(3 * apples)
-        val bill = with(shop) { shopper.checkout() }
+        val bill = shopper.checkout(shop)
 
         assertThat(bill.total).isEqualTo(bananaPrice * 2 + applePrice * 3)
     }
@@ -85,7 +85,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         shopper.addToCart(banana)
         shopper.addToCart(unsupportedProduct)
 
-        val attempt = runCatching { with(shop) { shopper.checkout() } }
+        val attempt = runCatching { shopper.checkout(shop) }
 
         assertThat(attempt).failedThrowing<UnsupportedProductException>().forProduct(unsupportedProduct)
     }
@@ -131,8 +131,7 @@ internal class InMemoryShopper : Shopper {
 
     private val cart = InMemoryShoppingCart()
 
-    context(Shop<CURRENCY>)
-    override suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout() = this@Shop.billFor(cart)
+    override suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(shop: Shop<CURRENCY>) = shop.billFor(cart)
 
     override suspend fun addToCart(item: ProductQuantity) = cart.add(item)
 }
@@ -186,8 +185,7 @@ internal class InMemoryShoppingCart : ShoppingCart {
 
 interface Shopper {
 
-    context(Shop<CURRENCY>)
-    suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(): Bill<CURRENCY>
+    suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(shop: Shop<CURRENCY>): Bill<CURRENCY>
 
     suspend fun addToCart(item: ProductQuantity)
 }
