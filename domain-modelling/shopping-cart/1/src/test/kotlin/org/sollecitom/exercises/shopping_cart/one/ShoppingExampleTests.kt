@@ -37,9 +37,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         val shopper = newShopper()
         val shop = newShop<Dollars>()
 
-        val bill = with(shop) {
-            shopper.checkout()
-        }
+        val bill = with(shop) { shopper.checkout() }
 
         assertThat(bill.total).isZero()
     }
@@ -53,9 +51,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         val shop = newShop<Dollars>(prices = mapOf(bananas to bananaPrice))
 
         shopper.addToCart(bananas)
-        val bill = with(shop) {
-            shopper.checkout()
-        }
+        val bill = with(shop) { shopper.checkout() }
 
         assertThat(bill.total).isEqualTo(bananaPrice)
     }
@@ -72,9 +68,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
 
         shopper.addToCart(2 * bananas)
         shopper.addToCart(3 * apples)
-        val bill = with(shop) {
-            shopper.checkout()
-        }
+        val bill = with(shop) { shopper.checkout() }
 
         assertThat(bill.total).isEqualTo(bananaPrice * 2 + applePrice * 3)
     }
@@ -91,11 +85,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         shopper.addToCart(banana)
         shopper.addToCart(unsupportedProduct)
 
-        val attempt = runCatching {
-            with(shop) {
-                shopper.checkout()
-            }
-        }
+        val attempt = runCatching { with(shop) { shopper.checkout() } }
 
         assertThat(attempt).failedThrowing<UnsupportedProductException>().forProduct(unsupportedProduct)
     }
