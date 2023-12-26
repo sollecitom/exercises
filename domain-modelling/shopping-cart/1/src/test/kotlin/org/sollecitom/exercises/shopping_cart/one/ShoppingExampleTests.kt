@@ -129,16 +129,16 @@ internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(currenc
 
     override suspend fun billFor(cart: ShoppingCart): Bill<CURRENCY> {
 
-        val total = cart.items.values.map(::cost).fold(zero, SpecificCurrencyAmount<CURRENCY>::plus)
+        val total = cart.items.values.map { it.cost }.fold(zero, SpecificCurrencyAmount<CURRENCY>::plus)
         return InMemoryBill(total)
     }
 
-    private fun cost(item: ShoppingCart.Item): CURRENCY {
-
-        val (product, quantity) = item
-        val price = prices[product] ?: error("Unsupported product $product")
-        return price * quantity
-    }
+    private val ProductQuantity.cost: CURRENCY
+        get() {
+            val (product, quantity) = this
+            val price = prices[product] ?: error("Unsupported product $product")
+            return price * quantity
+        }
 
 }
 
@@ -149,22 +149,20 @@ interface Shop<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
 
 interface ShoppingCart {
 
-    val items: Map<Product, Item>
-
-    data class Item(val product: Product, val quantity: Int)
+    val items: Map<Product, ProductQuantity>
 }
 
 internal class InMemoryShoppingCart : ShoppingCart {
 
     private val _items = mutableMapOf<Product, Int>()
-    override val items: Map<Product, ShoppingCart.Item> get() = _items.mapValues { it.asCartItem() }
+    override val items: Map<Product, ProductQuantity> get() = _items.mapValues { it.asProductQuantity() }
 
     fun add(item: ProductQuantity) {
 
         _items.compute(item.product) { _, quantity -> (quantity ?: 0) + item.quantity }
     }
 
-    private fun Map.Entry<Product, Int>.asCartItem() = ShoppingCart.Item(key, value)
+    private fun Map.Entry<Product, Int>.asProductQuantity() = ProductQuantity(key, value)
 }
 
 interface Shopper {
