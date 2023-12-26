@@ -24,10 +24,11 @@ import java.math.BigDecimal
 private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.testProvider {
 
     // TODO Tests
-    // 3x2 discount
-    // different prices on different days
     // a beer when the shopper is 14
     // a beer when the shopper is 25
+    // breakdown by product quantity in the bill
+    // 3x2 discount
+    // different prices on different days
     // different prices in different currencies across different shops
 
     @Test
