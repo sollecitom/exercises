@@ -1,5 +1,5 @@
 dependencies {
-    testImplementation(libs.chassis.ddd.test.utils)
-    testImplementation(libs.chassis.core.test.utils)
-    testImplementation(libs.chassis.test.utils)
+    api(libs.chassis.ddd.domain)
+    api(libs.chassis.core.domain)
+    api(libs.chassis.core.utils)
 }

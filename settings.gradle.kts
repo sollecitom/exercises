@@ -4,6 +4,7 @@ rootProject.name = "exercises"
 
 module("starter", "core")
 module("starter", "test")
+module("domain-modelling", "shopping-cart", "1")
 
 fun module(vararg pathSegments: String) {
     val projectName = pathSegments.last()
