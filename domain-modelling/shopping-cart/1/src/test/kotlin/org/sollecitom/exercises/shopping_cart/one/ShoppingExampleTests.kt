@@ -48,7 +48,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
     }
 
     @Test
-    fun `paying for some products`() = runTest {
+    fun `paying for a product`() = runTest {
 
         val shopper = newShopper()
         val banana = newProduct("Banana")
@@ -63,9 +63,29 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         assertThat(bill.total).isEqualTo(bananaPrice)
     }
 
+    @Test
+    fun `paying for some products`() = runTest {
+
+        val shopper = newShopper()
+        val banana = newProduct("Banana")
+        val bananaPrice = 50.cents
+        val shop = newShop<Dollars>(prices = mapOf(banana to bananaPrice))
+
+        shopper.addToCart(2 * banana)
+        val bill = with(shop) {
+            shopper.checkout()
+        }
+
+        assertThat(bill.total).isEqualTo(bananaPrice * 2)
+    }
+
     private fun newProduct(name: String, id: Id = newId.forEntities()): Product = ProductReference(id, name.let(::Name))
 
     private inline fun <reified CURRENCY : SpecificCurrencyAmount<CURRENCY>> newShop(prices: Map<Product, CURRENCY> = emptyMap()): Shop<CURRENCY> = InMemoryShop(CURRENCY::class.currency, prices)
+
+    private operator fun Int.times(product: Product) = ProductQuantity(product, this)
+
+    private suspend fun Shopper.addToCart(product: Product) = addToCart(1 * product)
 
     private fun newShopper(): Shopper = InMemoryShopper()
 }
@@ -96,15 +116,9 @@ internal class InMemoryShopper : Shopper {
     private val cart = InMemoryShoppingCart()
 
     context(Shop<CURRENCY>)
-    override suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(): Bill<CURRENCY> {
+    override suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout() = this@Shop.billFor(cart)
 
-        return this@Shop.billFor(cart)
-    }
-
-    override suspend fun addToCart(product: Product) {
-
-        cart.add(product)
-    }
+    override suspend fun addToCart(item: ProductQuantity) = cart.add(item)
 }
 
 data class InMemoryBill<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(override val total: CURRENCY) : Bill<CURRENCY>
@@ -145,9 +159,9 @@ internal class InMemoryShoppingCart : ShoppingCart {
     private val _items = mutableMapOf<Product, Int>()
     override val items: Map<Product, ShoppingCart.Item> get() = _items.mapValues { it.asCartItem() }
 
-    fun add(product: Product) {
+    fun add(item: ProductQuantity) {
 
-        _items.compute(product) { _, quantity -> (quantity ?: 0) + 1 }
+        _items.compute(item.product) { _, quantity -> (quantity ?: 0) + item.quantity }
     }
 
     private fun Map.Entry<Product, Int>.asCartItem() = ShoppingCart.Item(key, value)
@@ -158,7 +172,14 @@ interface Shopper {
     context(Shop<CURRENCY>)
     suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(): Bill<CURRENCY>
 
-    suspend fun addToCart(product: Product)
+    suspend fun addToCart(item: ProductQuantity)
+}
+
+data class ProductQuantity(val product: Product, val quantity: Int) {
+
+    init {
+        require(quantity > 0) { "Quantity must be greater than zero" }
+    }
 }
 
 interface Bill<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
