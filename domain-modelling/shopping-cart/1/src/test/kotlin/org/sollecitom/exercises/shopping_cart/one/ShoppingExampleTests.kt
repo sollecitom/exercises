@@ -109,7 +109,7 @@ internal class InMemoryShopper : Shopper {
 
 data class InMemoryBill<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(override val total: CURRENCY) : Bill<CURRENCY>
 
-internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(private val currency: Currency<CURRENCY>, private val prices: Map<Product, CURRENCY>) : Shop<CURRENCY> {
+internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(currency: Currency<CURRENCY>, private val prices: Map<Product, CURRENCY>) : Shop<CURRENCY> {
 
     private val zero = BigDecimal.ZERO.toCurrencyAmount(currency)
 
