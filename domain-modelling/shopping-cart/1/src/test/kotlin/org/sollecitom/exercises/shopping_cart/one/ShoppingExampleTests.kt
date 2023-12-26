@@ -46,11 +46,11 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
     fun `paying for a product`() = runTest {
 
         val shopper = newShopper()
-        val banana = newProduct("Banana")
+        val bananas = newProduct("Banana(s)")
         val bananaPrice = 60.cents
-        val shop = newShop<Dollars>(prices = mapOf(banana to bananaPrice))
+        val shop = newShop<Dollars>(prices = mapOf(bananas to bananaPrice))
 
-        shopper.addToCart(banana)
+        shopper.addToCart(bananas)
         val bill = with(shop) {
             shopper.checkout()
         }
