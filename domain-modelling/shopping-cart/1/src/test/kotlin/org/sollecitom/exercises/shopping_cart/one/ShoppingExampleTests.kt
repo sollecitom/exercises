@@ -1,7 +1,6 @@
 package org.sollecitom.exercises.shopping_cart.one
 
 import assertk.assertThat
-import assertk.assertions.isZero
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -21,6 +20,7 @@ private class ShoppingExampleTests {
     // 1 banana
     // 2 bananas
     // 2 apples and 3 bananas
+    // an unknown product
     // 3x2 discount
     // different prices on different days
     // a beer when the shopper is 14
