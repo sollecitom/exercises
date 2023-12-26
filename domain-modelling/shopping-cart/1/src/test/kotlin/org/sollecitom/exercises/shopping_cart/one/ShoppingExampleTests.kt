@@ -1,5 +1,6 @@
 package org.sollecitom.exercises.shopping_cart.one
 
+import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import kotlinx.coroutines.test.runTest
@@ -16,13 +17,13 @@ import org.sollecitom.chassis.core.domain.traits.Identifiable
 import org.sollecitom.chassis.core.test.utils.isZero
 import org.sollecitom.chassis.core.test.utils.testProvider
 import org.sollecitom.chassis.core.utils.CoreDataGenerator
+import org.sollecitom.chassis.test.utils.assertions.failedThrowing
 import java.math.BigDecimal
 
 @TestInstance(PER_CLASS)
 private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.testProvider {
 
     // TODO Tests
-    // an unsupported product
     // 3x2 discount
     // different prices on different days
     // a beer when the shopper is 14
@@ -75,6 +76,32 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         }
 
         assertThat(bill.total).isEqualTo(bananaPrice * 2 + applePrice * 3)
+    }
+
+    @Test
+    fun `attempting to checkout a cart containing an unsupported product`() = runTest {
+
+        val shopper = newShopper()
+        val banana = newProduct("Banana(s)")
+        val unsupportedProduct = newProduct("Unsupported product(s)")
+        val bananaPrice = 60.cents
+        val shop = newShop<Dollars>(prices = mapOf(banana to bananaPrice))
+
+        shopper.addToCart(banana)
+        shopper.addToCart(unsupportedProduct)
+
+        val attempt = runCatching {
+            with(shop) {
+                shopper.checkout()
+            }
+        }
+
+        assertThat(attempt).failedThrowing<UnsupportedProductException>().forProduct(unsupportedProduct)
+    }
+
+    private fun Assert<UnsupportedProductException>.forProduct(product: Product) = given { error ->
+
+        assertThat(error.product).isEqualTo(product)
     }
 
     private fun newProduct(name: String, id: Id = newId.forEntities()): Product = ProductReference(id, name.let(::Name))
@@ -134,11 +161,14 @@ internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(currenc
     private val ProductQuantity.cost: CURRENCY
         get() {
             val (product, quantity) = this
-            val price = prices[product] ?: error("Unsupported product $product")
+            val price = prices[product] ?: product.rejectAsUnsupported()
             return price * quantity
         }
 
+    private fun Product.rejectAsUnsupported(): Nothing = throw UnsupportedProductException(this)
 }
+
+data class UnsupportedProductException(val product: Product) : Exception("Unsupported product with ID '${product.id.stringValue}' and name ${product.name.value}")
 
 interface Shop<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
 
