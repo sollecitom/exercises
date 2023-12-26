@@ -25,7 +25,6 @@ import java.math.BigDecimal
 private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.testProvider {
 
     // TODO Tests
-    // 1 banana
     // 2 bananas
     // 2 apples and 3 bananas
     // an unsupported product
@@ -116,20 +115,17 @@ internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(private
 
     override suspend fun billFor(cart: ShoppingCart): Bill<CURRENCY> {
 
-        val total = cart.items.map { it.asCartItem() }.map(::cost).fold(zero, SpecificCurrencyAmount<CURRENCY>::plus)
+        val total = cart.items.values.map(::cost).fold(zero, SpecificCurrencyAmount<CURRENCY>::plus)
         return InMemoryBill(total)
     }
 
-    private fun cost(item: CartItem): CURRENCY {
+    private fun cost(item: ShoppingCart.Item): CURRENCY {
 
         val (product, quantity) = item
         val price = prices[product] ?: error("Unsupported product $product")
         return price * quantity
     }
 
-    private data class CartItem(val product: Product, val quantity: Int)
-
-    private fun Map.Entry<Product, Int>.asCartItem(): CartItem = CartItem(key, value)
 }
 
 interface Shop<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
@@ -139,18 +135,22 @@ interface Shop<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
 
 interface ShoppingCart {
 
-    val items: Map<Product, Int>
+    val items: Map<Product, Item>
+
+    data class Item(val product: Product, val quantity: Int)
 }
 
 internal class InMemoryShoppingCart : ShoppingCart {
 
     private val _items = mutableMapOf<Product, Int>()
-    override val items: Map<Product, Int> get() = _items
+    override val items: Map<Product, ShoppingCart.Item> get() = _items.mapValues { it.asCartItem() }
 
     fun add(product: Product) {
 
         _items.compute(product) { _, quantity -> (quantity ?: 0) + 1 }
     }
+
+    private fun Map.Entry<Product, Int>.asCartItem() = ShoppingCart.Item(key, value)
 }
 
 interface Shopper {
