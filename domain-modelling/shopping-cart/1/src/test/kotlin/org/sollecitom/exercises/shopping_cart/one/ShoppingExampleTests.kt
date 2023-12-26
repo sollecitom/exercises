@@ -6,13 +6,18 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.sollecitom.chassis.core.domain.currency.Currency
+import org.sollecitom.chassis.core.domain.currency.SpecificCurrencyAmount
+import org.sollecitom.chassis.core.domain.currency.known.Dollars
+import org.sollecitom.chassis.core.domain.currency.known.currency
+import org.sollecitom.chassis.core.domain.currency.known.toCurrencyAmount
+import org.sollecitom.chassis.core.test.utils.isZero
+import java.math.BigDecimal
 
 @TestInstance(PER_CLASS)
 private class ShoppingExampleTests {
 
     // TODO Tests
-    // empty cart
-    // empty cart, with currency
     // 1 banana
     // 2 bananas
     // 2 apples and 3 bananas
@@ -26,7 +31,7 @@ private class ShoppingExampleTests {
     fun `checking out an empty cart`() = runTest {
 
         val shopper = newShopper()
-        val shop = newShop()
+        val shop = newShop<Dollars>()
 
         val bill = with(shop) {
             shopper.checkout()
@@ -35,37 +40,53 @@ private class ShoppingExampleTests {
         assertThat(bill.total).isZero()
     }
 
-    private fun newShop(): Shop = InMemoryShop()
+    private inline fun <reified CURRENCY : SpecificCurrencyAmount<CURRENCY>> newShop(): Shop<CURRENCY> = InMemoryShop(CURRENCY::class.currency)
 
     private fun newShopper(): Shopper = InMemoryShopper()
 }
 
 internal class InMemoryShopper : Shopper {
 
-    context(Shop)
-    override suspend fun checkout(): Bill {
+    private val cart = InMemoryShoppingCart()
 
-        return InMemoryBill(total = 0.0)
+    context(Shop<CURRENCY>)
+    override suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(): Bill<CURRENCY> {
+
+        return this@Shop.billFor(cart)
     }
 }
 
-data class InMemoryBill(override val total: Double) : Bill
+data class InMemoryBill<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(override val total: CURRENCY) : Bill<CURRENCY>
 
-internal class InMemoryShop : Shop {
+internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(private val currency: Currency<CURRENCY>) : Shop<CURRENCY> {
+
+    override suspend fun billFor(cart: ShoppingCart): Bill<CURRENCY> {
+
+        val total = BigDecimal.ZERO.toCurrencyAmount(currency)
+        return InMemoryBill(total)
+    }
+}
+
+interface Shop<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
+
+    suspend fun billFor(cart: ShoppingCart): Bill<CURRENCY>
+}
+
+interface ShoppingCart {
 
 }
 
-interface Shop {
+internal class InMemoryShoppingCart : ShoppingCart {
 
 }
 
 interface Shopper {
 
-    context(Shop)
-    suspend fun checkout(): Bill
+    context(Shop<CURRENCY>)
+    suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(): Bill<CURRENCY>
 }
 
-interface Bill {
+interface Bill<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
 
-    val total: Double
+    val total: CURRENCY
 }
