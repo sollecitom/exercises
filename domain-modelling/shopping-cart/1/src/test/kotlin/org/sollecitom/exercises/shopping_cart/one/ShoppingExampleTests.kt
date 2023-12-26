@@ -25,7 +25,6 @@ import java.math.BigDecimal
 private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.testProvider {
 
     // TODO Tests
-    // 2 bananas
     // 2 apples and 3 bananas
     // an unsupported product
     // 3x2 discount
