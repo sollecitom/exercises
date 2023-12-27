@@ -19,6 +19,8 @@ import org.sollecitom.chassis.core.domain.traits.Identifiable
 import org.sollecitom.chassis.core.test.utils.isZero
 import org.sollecitom.chassis.core.test.utils.testProvider
 import org.sollecitom.chassis.core.utils.CoreDataGenerator
+import org.sollecitom.chassis.kotlin.extensions.time.localDate
+import org.sollecitom.chassis.kotlin.extensions.time.years
 import org.sollecitom.chassis.test.utils.assertions.failedThrowing
 import org.sollecitom.chassis.test.utils.assertions.succeeded
 import java.math.BigDecimal
@@ -151,20 +153,6 @@ data class MinimumAge(private val age: Age, private val clock: Clock) : Product.
 
     companion object
 }
-
-val Int.years: DatePeriod get() = DatePeriod(years = this)
-
-fun Clock.localDateTime(timeZone: TimeZone = TimeZone.currentSystemDefault()): LocalDateTime = now().toLocalDateTime(timeZone)
-
-fun Clock.localDate(timeZone: TimeZone = TimeZone.currentSystemDefault()): LocalDate = localDateTime(timeZone).date
-
-fun Clock.localTime(timeZone: TimeZone = TimeZone.currentSystemDefault()): LocalTime = localDateTime(timeZone).time
-
-val Clock.localDateTime: LocalDateTime get() = localDateTime()
-
-val Clock.localDate: LocalDate get() = localDate()
-
-val Clock.localTime: LocalTime get() = localTime()
 
 data class ShopperDetails(val dateOfBirth: LocalDate)
 
