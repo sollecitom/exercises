@@ -20,13 +20,13 @@ import org.sollecitom.chassis.core.test.utils.isZero
 import org.sollecitom.chassis.core.test.utils.testProvider
 import org.sollecitom.chassis.core.utils.CoreDataGenerator
 import org.sollecitom.chassis.test.utils.assertions.failedThrowing
+import org.sollecitom.chassis.test.utils.assertions.succeeded
 import java.math.BigDecimal
 
 @TestInstance(PER_CLASS)
 private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.testProvider {
 
     // TODO Tests
-    // a beer when the shopper is 25
     // breakdown by product quantity in the bill
     // 3x2 discount
     // different prices on different days
@@ -104,6 +104,21 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         val attempt = runCatching { shopper.checkout(shop) }
 
         assertThat(attempt).failedThrowing<UnmetProductRequirementsException>().forProduct(beer)
+    }
+
+    @Test
+    fun `attempting to checkout an age-restricted product while not being underage`() = runTest {
+
+        val shopper = newShopper(age = 18)
+        val beer = newProduct(name = "Beer bottle(s)", requirements = setOf(minimumAge(value = 18)))
+        val beerBottlePrice = 2.dollars
+        val shop = newShop<Dollars>(prices = mapOf(beer to beerBottlePrice))
+
+        shopper.addToCart(beer)
+
+        val attempt = runCatching { shopper.checkout(shop) }
+
+        assertThat(attempt).succeeded()
     }
 
     private fun <EXCEPTION : ProductException> Assert<EXCEPTION>.forProduct(product: Product) = given { error ->
