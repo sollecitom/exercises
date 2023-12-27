@@ -134,8 +134,7 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
 
     private suspend fun Shopper.addToCart(product: Product) = addToCart(1 * product)
 
-    // TODO refactor
-    private fun newShopper(age: Int = 50): Shopper = InMemoryShopper(details = ShopperDetails(dateOfBirth = clock.now().minus(DateTimePeriod(years = age), TimeZone.currentSystemDefault()).toLocalDateTime(TimeZone.currentSystemDefault()).date))
+    private fun newShopper(age: Int = 50): Shopper = InMemoryShopper(details = ShopperDetails(dateOfBirth = clock.localDate - age.years))
 
     private fun minimumAge(value: Int) = MinimumAge(Age(value), clock)
 }
@@ -146,12 +145,26 @@ data class MinimumAge(private val age: Age, private val clock: Clock) : Product.
 
     override fun isMetBy(details: ShopperDetails): Boolean {
 
-        // TODO refactor
-        return details.dateOfBirth.yearsUntil(clock.now().toLocalDateTime(TimeZone.currentSystemDefault()).date).let(::Age) >= age
+        val currentAge = details.dateOfBirth.yearsUntil(clock.localDate).let(::Age)
+        return currentAge >= age
     }
 
     companion object
 }
+
+val Int.years: DatePeriod get() = DatePeriod(years = this)
+
+fun Clock.localDateTime(timeZone: TimeZone = TimeZone.currentSystemDefault()): LocalDateTime = now().toLocalDateTime(timeZone)
+
+fun Clock.localDate(timeZone: TimeZone = TimeZone.currentSystemDefault()): LocalDate = localDateTime(timeZone).date
+
+fun Clock.localTime(timeZone: TimeZone = TimeZone.currentSystemDefault()): LocalTime = localDateTime(timeZone).time
+
+val Clock.localDateTime: LocalDateTime get() = localDateTime()
+
+val Clock.localDate: LocalDate get() = localDate()
+
+val Clock.localTime: LocalTime get() = localTime()
 
 data class ShopperDetails(val dateOfBirth: LocalDate)
 
