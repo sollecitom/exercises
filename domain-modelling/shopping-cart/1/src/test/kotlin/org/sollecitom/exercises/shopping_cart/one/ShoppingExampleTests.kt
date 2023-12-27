@@ -4,9 +4,11 @@ import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.sollecitom.chassis.core.domain.age.Age
 import org.sollecitom.chassis.core.domain.currency.Currency
 import org.sollecitom.chassis.core.domain.currency.SpecificCurrencyAmount
 import org.sollecitom.chassis.core.domain.currency.known.*
@@ -24,7 +26,6 @@ import java.math.BigDecimal
 private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.testProvider {
 
     // TODO Tests
-    // a beer when the shopper is 14
     // a beer when the shopper is 25
     // breakdown by product quantity in the bill
     // 3x2 discount
@@ -90,12 +91,27 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
         assertThat(attempt).failedThrowing<UnsupportedProductException>().forProduct(unsupportedProduct)
     }
 
-    private fun Assert<UnsupportedProductException>.forProduct(product: Product) = given { error ->
+    @Test
+    fun `attempting to checkout an age-restricted product while being underage`() = runTest {
+
+        val shopper = newShopper(age = 14)
+        val beer = newProduct(name = "Beer bottle(s)", requirements = setOf(minimumAge(value = 18)))
+        val beerBottlePrice = 2.dollars
+        val shop = newShop<Dollars>(prices = mapOf(beer to beerBottlePrice))
+
+        shopper.addToCart(beer)
+
+        val attempt = runCatching { shopper.checkout(shop) }
+
+        assertThat(attempt).failedThrowing<UnmetProductRequirementsException>().forProduct(beer)
+    }
+
+    private fun <EXCEPTION : ProductException> Assert<EXCEPTION>.forProduct(product: Product) = given { error ->
 
         assertThat(error.product).isEqualTo(product)
     }
 
-    private fun newProduct(name: String, id: Id = newId.forEntities()): Product = ProductReference(id, name.let(::Name))
+    private fun newProduct(name: String, id: Id = newId.forEntities(), requirements: Set<Product.Requirement> = emptySet()): Product = InMemoryProduct(id, name.let(::Name), Product.Restrictions.forRequirements(requirements))
 
     private inline fun <reified CURRENCY : SpecificCurrencyAmount<CURRENCY>> newShop(prices: Map<Product, CURRENCY> = emptyMap()): Shop<CURRENCY> = InMemoryShop(CURRENCY::class.currency, prices)
 
@@ -103,14 +119,34 @@ private class ShoppingExampleTests : CoreDataGenerator by CoreDataGenerator.test
 
     private suspend fun Shopper.addToCart(product: Product) = addToCart(1 * product)
 
-    private fun newShopper(): Shopper = InMemoryShopper()
+    // TODO refactor
+    private fun newShopper(age: Int = 50): Shopper = InMemoryShopper(details = ShopperDetails(dateOfBirth = clock.now().minus(DateTimePeriod(years = age), TimeZone.currentSystemDefault()).toLocalDateTime(TimeZone.currentSystemDefault()).date))
+
+    private fun minimumAge(value: Int) = MinimumAge(Age(value), clock)
 }
 
-class ProductReference(override val id: Id, override val name: Name) : Product {
+data class MinimumAge(private val age: Age, private val clock: Clock) : Product.Requirement {
+
+    override val description by lazy { "Minimum age requirement of $age".let(::Name) }
+
+    override fun isMetBy(details: ShopperDetails): Boolean {
+
+        // TODO refactor
+        return details.dateOfBirth.yearsUntil(clock.now().toLocalDateTime(TimeZone.currentSystemDefault()).date).let(::Age) >= age
+    }
+
+    companion object
+}
+
+data class ShopperDetails(val dateOfBirth: LocalDate)
+
+class InMemoryProduct(override val id: Id, override val name: Name, private val restrictions: Product.Restrictions) : Product {
+
+    override fun enforceRestrictions(details: ShopperDetails) = restrictions.enforce(details, this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is ProductReference) return false
+        if (other !is InMemoryProduct) return false
 
         if (id != other.id) return false
 
@@ -125,13 +161,40 @@ class ProductReference(override val id: Id, override val name: Name) : Product {
 interface Product : Identifiable {
 
     val name: Name
+
+    fun enforceRestrictions(details: ShopperDetails)
+
+    interface Restrictions {
+
+        fun enforce(details: ShopperDetails, product: Product)
+
+        companion object
+    }
+
+    interface Requirement {
+
+        val description: Name
+
+        fun isMetBy(details: ShopperDetails): Boolean
+    }
 }
 
-internal class InMemoryShopper : Shopper {
+fun Product.Restrictions.Companion.forRequirements(requirements: Set<Product.Requirement>): Product.Restrictions = DelegatingProductRestrictions(requirements)
+
+private class DelegatingProductRestrictions(private val requirements: Set<Product.Requirement>) : Product.Restrictions {
+
+    override fun enforce(details: ShopperDetails, product: Product) {
+
+        val unmetRequirements = requirements.filterNot { it.isMetBy(details) }.toSet()
+        if (unmetRequirements.isNotEmpty()) throw UnmetProductRequirementsException(product, unmetRequirements)
+    }
+}
+
+internal class InMemoryShopper(private val details: ShopperDetails) : Shopper {
 
     private val cart = InMemoryShoppingCart()
 
-    override suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(shop: Shop<CURRENCY>) = shop.billFor(cart)
+    override suspend fun <CURRENCY : SpecificCurrencyAmount<CURRENCY>> checkout(shop: Shop<CURRENCY>) = shop.billFor(cart = cart, details = details)
 
     override suspend fun addToCart(item: ProductQuantity) = cart.add(item)
 }
@@ -142,11 +205,14 @@ internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(currenc
 
     private val zero = BigDecimal.ZERO.toCurrencyAmount(currency)
 
-    override suspend fun billFor(cart: ShoppingCart): Bill<CURRENCY> {
+    override suspend fun billFor(cart: ShoppingCart, details: ShopperDetails): Bill<CURRENCY> {
 
+        cart.enforceProductRestrictions(details)
         val total = cart.items.values.map { it.cost }.fold(zero, SpecificCurrencyAmount<CURRENCY>::plus)
         return InMemoryBill(total)
     }
+
+    private fun ShoppingCart.enforceProductRestrictions(details: ShopperDetails) = items.keys.forEach { product -> product.enforceRestrictions(details) }
 
     private val ProductQuantity.cost: CURRENCY
         get() {
@@ -158,11 +224,18 @@ internal class InMemoryShop<CURRENCY : SpecificCurrencyAmount<CURRENCY>>(currenc
     private fun Product.rejectAsUnsupported(): Nothing = throw UnsupportedProductException(this)
 }
 
-data class UnsupportedProductException(val product: Product) : Exception("Unsupported product with ID '${product.id.stringValue}' and name ${product.name.value}")
+data class UnsupportedProductException(override val product: Product) : Exception("Unsupported product with ID '${product.id.stringValue}' and name ${product.name.value}"), ProductException
+
+data class UnmetProductRequirementsException(override val product: Product, val unmetRequirements: Set<Product.Requirement>) : Exception("Restricted product with ID '${product.id.stringValue}' and name ${product.name.value} has unmet requirements: ${unmetRequirements.joinToString(separator = ", ") { it.description.value }}"), ProductException
+
+sealed interface ProductException {
+
+    val product: Product
+}
 
 interface Shop<CURRENCY : SpecificCurrencyAmount<CURRENCY>> {
 
-    suspend fun billFor(cart: ShoppingCart): Bill<CURRENCY>
+    suspend fun billFor(cart: ShoppingCart, details: ShopperDetails): Bill<CURRENCY>
 }
 
 interface ShoppingCart {
