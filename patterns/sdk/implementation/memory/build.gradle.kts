@@ -1,5 +1,5 @@
 dependencies {
     api(projects.exercisesPatternsSdkApi)
 
-    testImplementation(projects.exercisesStarterTest)
+    testImplementation(projects.exercisesPatternsSdkTestSpecification)
 }

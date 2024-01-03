@@ -6,6 +6,7 @@ module("starter", "core")
 module("starter", "test")
 module("domain-modelling", "shopping-cart", "1")
 module("patterns", "sdk", "api")
+module("patterns", "sdk", "test", "specification")
 module("patterns", "sdk", "implementation", "memory")
 module("patterns", "sdk", "implementation", "remote")
 
