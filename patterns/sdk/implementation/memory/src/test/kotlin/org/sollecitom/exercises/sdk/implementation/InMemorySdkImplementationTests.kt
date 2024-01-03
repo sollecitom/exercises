@@ -36,22 +36,21 @@ internal class InMemoryCollectionOperations : CollectionOperations {
 
     private val byId = mutableMapOf<Id, VendorCollection>()
 
-    override fun create(id: Id, vendors: List<Vendor>) = InMemoryCollection(id, vendors).also { byId[it.id] = it }
+    override suspend fun create(id: Id, vendors: List<Vendor>) = InMemoryCollection(id, vendors).also { byId[it.id] = it }
 
-    override fun withId(id: Id): VendorCollection = byId[id]!! // TODO fix it to cope with nonexistent collections
+    override suspend fun delete(collectionId: Id) {
+
+        byId.remove(collectionId)
+    }
+
+    override fun query(maxPageSize: Int) = InMemoryResults(maxPageSize) { byId.values.toList() }
+
+    override fun withId(id: Id) = byId[id]!! // TODO fix it to cope with nonexistent collections
 }
 
 internal class InMemoryCollection(override val id: Id, private val vendors: List<Vendor>) : VendorCollection {
 
     override fun vendors(maxPageSize: Int) = InMemoryResults(maxPageSize) { vendors }
-
-    override suspend fun delete() {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun exists(): Boolean {
-        TODO("Not yet implemented")
-    }
 }
 
 internal class InMemoryVendorOperations(private val allVendors: () -> List<Vendor>) : VendorOperations {
