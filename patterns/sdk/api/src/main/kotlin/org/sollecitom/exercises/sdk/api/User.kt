@@ -1,13 +1,27 @@
 package org.sollecitom.exercises.sdk.api
 
+import org.sollecitom.chassis.core.domain.identity.Id
+import org.sollecitom.chassis.core.domain.traits.Identifiable
+
 interface User {
 
+    val collections: CollectionOperations
     val vendors: VendorOperations
+}
+
+interface CollectionOperations {
+
+    fun create(id: Id, vendors: List<Vendor>): VendorCollection
+}
+
+interface VendorCollection : Identifiable {
+
+    fun vendors(maxPageSize: Int): Results<Vendor>
 }
 
 interface VendorOperations {
 
-    suspend fun query(maxPageSize: Int): Results<Vendor>
+    fun query(maxPageSize: Int): Results<Vendor>
 }
 
 interface Results<ENTITY : Any> {
