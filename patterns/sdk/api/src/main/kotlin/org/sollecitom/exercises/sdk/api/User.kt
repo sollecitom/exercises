@@ -7,5 +7,12 @@ interface User {
 
 interface VendorOperations {
 
-    suspend fun query(): Set<Vendor>
+    suspend fun query(maxPageSize: Int): Results<Vendor>
+}
+
+interface Results<ENTITY : Any> {
+
+    fun next(): List<ENTITY>
+
+    fun hasNext(): Boolean
 }

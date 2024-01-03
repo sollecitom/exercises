@@ -4,5 +4,5 @@ import org.sollecitom.exercises.sdk.api.Vendor
 
 interface TestSDK {
 
-    fun newMarketPlace(initialVendors: Set<Vendor>): Marketplace
+    fun newMarketPlace(initialVendors: List<Vendor>): Marketplace
 }

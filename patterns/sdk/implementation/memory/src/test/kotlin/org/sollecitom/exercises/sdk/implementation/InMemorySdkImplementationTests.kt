@@ -4,6 +4,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.sollecitom.chassis.core.test.utils.testProvider
 import org.sollecitom.chassis.core.utils.CoreDataGenerator
+import org.sollecitom.exercises.sdk.api.Results
 import org.sollecitom.exercises.sdk.api.User
 import org.sollecitom.exercises.sdk.api.Vendor
 import org.sollecitom.exercises.sdk.api.VendorOperations
@@ -19,20 +20,29 @@ private class InMemorySdkImplementationTests : SdkTestSpecification, CoreDataGen
 
 class InMemorySdk : TestSDK { // TODO move
 
-    override fun newMarketPlace(initialVendors: Set<Vendor>): Marketplace = InMemoryMarketMarketplace(initialVendors)
+    override fun newMarketPlace(initialVendors: List<Vendor>): Marketplace = InMemoryMarketMarketplace(initialVendors)
 }
 
-internal class InMemoryMarketMarketplace(private val initialVendors: Set<Vendor>) : Marketplace {
+internal class InMemoryMarketMarketplace(private val initialVendors: List<Vendor>) : Marketplace {
 
     override fun newLoggedInUser() = InMemoryUser(allVendors = { initialVendors })
 }
 
-internal class InMemoryUser(private val allVendors: () -> Set<Vendor>) : User {
+internal class InMemoryUser(private val allVendors: () -> List<Vendor>) : User {
 
     override val vendors = InMemoryVendorOperations(allVendors)
 }
 
-internal class InMemoryVendorOperations(private val allVendors: () -> Set<Vendor>) : VendorOperations {
+internal class InMemoryVendorOperations(private val allVendors: () -> List<Vendor>) : VendorOperations {
 
-    override suspend fun query() = allVendors()
+    override suspend fun query(maxPageSize: Int) = InMemoryResults(maxPageSize, allVendors)
+}
+
+internal class InMemoryResults(private val maxPageSize: Int, private val allVendors: () -> List<Vendor>) : Results<Vendor> {
+
+    private var store = allVendors()
+
+    override fun next(): List<Vendor> = store.take(maxPageSize).also { store = store.drop(maxPageSize) }
+
+    override fun hasNext(): Boolean = store.isNotEmpty()
 }
