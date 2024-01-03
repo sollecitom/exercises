@@ -21,3 +21,9 @@ Your SDK also has a remote implementation that implements its API against the ba
 Backend applications are tested by driving them either via headless scripts. These tests can benefit from using the SDK API instead, so that they're more type-safe and expressive.
 
 Under the hood, the tests for backend services use the remote implementation of your SDK, typically pointing at the services running as OCI containers locally, or remotely on an environment.
+
+## Notes
+
+While a properly crafted SDK offers many benefits, SDKs are inherently tied to a programming language. This means that if you want to maximize the benefits, you should provide SDKs in the main programming languages used by your customers.
+
+Typically, a TypeScript SDK is a great start, followed by a JVM-language one (Java/Kotlin/Scala) if needed. Other to consider are Python, Rust/C++, Golang, etc. This depends on your business domain, as certain programming languages are more used in certain contexts e.g., Python in data science and Golang in Cloud infrastructure.
