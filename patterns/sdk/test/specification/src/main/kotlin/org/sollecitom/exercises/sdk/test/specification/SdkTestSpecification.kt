@@ -12,11 +12,14 @@ interface SdkTestSpecification {
     val sdk: TestSDK
 
     @Test
-    fun `not sure yet`() = runTest {
+    fun `a user retrieves the vendors for a marketplace`() = runTest {
 
-        val user = sdk.newLoggedInUser()
+        val marketplace = sdk.newMarketPlace()
+
+        val user = marketplace.newLoggedInUser()
+
+        val vendors = user.vendors.query()
 
         assertThat(true).isFalse()
     }
 }
-
