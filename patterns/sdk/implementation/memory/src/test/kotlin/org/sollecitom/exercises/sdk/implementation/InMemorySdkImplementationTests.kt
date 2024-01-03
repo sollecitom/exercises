@@ -42,7 +42,7 @@ internal class InMemoryResults(private val maxPageSize: Int, private val allVend
 
     private var store = allVendors()
 
-    override fun next(): List<Vendor> = store.take(maxPageSize).also { store = store.drop(maxPageSize) }
+    override suspend fun next(): List<Vendor> = store.take(maxPageSize).also { store = store.drop(maxPageSize) }
 
-    override fun hasNext(): Boolean = store.isNotEmpty()
+    override suspend fun hasNext(): Boolean = store.isNotEmpty()
 }

@@ -12,7 +12,16 @@ interface VendorOperations {
 
 interface Results<ENTITY : Any> {
 
-    fun next(): List<ENTITY>
+    suspend fun next(): List<ENTITY>
 
-    fun hasNext(): Boolean
+    suspend fun hasNext(): Boolean
+}
+
+suspend fun <ENTITY : Any> Results<ENTITY>.toList(): List<ENTITY> {
+
+    val all = mutableListOf<ENTITY>()
+    while (hasNext()) {
+        all += next()
+    }
+    return all
 }
