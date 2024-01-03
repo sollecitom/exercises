@@ -30,7 +30,7 @@ interface SdkTestSpecification : CoreDataGenerator {
     }
 
     @Test
-    fun `a user creates a collection of bookmarked`() = runTest {
+    fun `a user creates a collection of bookmarked vendors`() = runTest {
 
         val initialVendors = (1..100).map { newVendor() }.toList()
         val marketplace = sdk.newMarketPlace(initialVendors)
