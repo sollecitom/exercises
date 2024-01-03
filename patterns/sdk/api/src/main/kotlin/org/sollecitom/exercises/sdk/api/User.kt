@@ -7,5 +7,5 @@ interface User {
 
 interface VendorOperations {
 
-    suspend fun query(): Any
+    suspend fun query(): Set<Vendor>
 }
