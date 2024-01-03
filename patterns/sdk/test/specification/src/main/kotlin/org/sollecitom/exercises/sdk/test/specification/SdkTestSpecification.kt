@@ -2,12 +2,14 @@ package org.sollecitom.exercises.sdk.test.specification
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sollecitom.chassis.core.domain.identity.Id
 import org.sollecitom.chassis.core.utils.CoreDataGenerator
 import org.sollecitom.chassis.test.utils.assertions.containsSameElementsAs
 import org.sollecitom.exercises.sdk.api.CollectionOperations
+import org.sollecitom.exercises.sdk.api.User
 import org.sollecitom.exercises.sdk.api.Vendor
 import org.sollecitom.exercises.sdk.api.toList
 
@@ -46,7 +48,25 @@ interface SdkTestSpecification : CoreDataGenerator {
         assertThat(collection.vendors(maxPageSize = maxPageSize).toList()).containsSameElementsAs(bookmarkedVendors)
     }
 
+    @Test
+    fun `a user deletes a collection of vendors`() = withUserAndMarketplace { user, marketplace ->
+
+        val created = user.collections.create()
+        val collection = user.collections.withId(created.id)
+
+        collection.delete()
+
+        assertThat(user.collections.withId(created.id).exists()).isFalse()
+    }
+
+    private fun withUserAndMarketplace(initialVendors: List<Vendor> = (1..100).map { newVendor() }.toList(), action: suspend (User, Marketplace) -> Unit) = runTest {
+
+        val marketplace = sdk.newMarketPlace(initialVendors)
+        val user = marketplace.newLoggedInUser()
+        action(user, marketplace)
+    }
+
     private fun newVendor(id: Id = newId.internal()) = Vendor(id)
 
-    private suspend fun CollectionOperations.create(vendors: List<Vendor>) = create(vendors = vendors, id = newId.internal())
+    private suspend fun CollectionOperations.create(vendors: List<Vendor> = emptyList()) = create(vendors = vendors, id = newId.internal())
 }

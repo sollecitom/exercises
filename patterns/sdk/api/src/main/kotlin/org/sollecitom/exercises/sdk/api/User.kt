@@ -12,11 +12,16 @@ interface User {
 interface CollectionOperations {
 
     fun create(id: Id, vendors: List<Vendor>): VendorCollection
+
+    fun withId(id: Id): VendorCollection
 }
 
 interface VendorCollection : Identifiable {
 
     fun vendors(maxPageSize: Int): Results<Vendor>
+
+    suspend fun delete()
+    suspend fun exists(): Boolean
 }
 
 interface VendorOperations {
